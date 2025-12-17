@@ -1,0 +1,8 @@
+iso/
+vm/
+
+*.iso
+*.qcow2
+*.raw
+*.img
+/ovmf_vars*.fd
