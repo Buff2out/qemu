@@ -23,11 +23,14 @@ base:
     -name {{vm}} \
     -enable-kvm -machine q35 -cpu host -smp {{smp}} -m {{mem}} \
     -drive file={{base_img}},if=virtio,format=qcow2 \
-    -device virtio-gpu-pci \
-    -display sdl,grab-mod=rctrl \
+    -vga virtio \
     -usb -device usb-tablet \
     -audiodev pipewire,id=pwsnd \
     -device intel-hda -device hda-duplex,audiodev=pwsnd \
+    -display gtk \
+    -device virtio-serial-pci \
+    -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
+    -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
     -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 \
     -device virtio-net-pci,netdev=net0 \
     -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
@@ -42,11 +45,14 @@ work:
     -name {{vm}} \
     -enable-kvm -machine q35 -cpu host -smp {{smp}} -m {{mem}} \
     -drive file={{work_img}},if=virtio,format=qcow2 \
-    -device virtio-gpu-pci \
-    -display sdl,grab-mod=rctrl \
+    -vga virtio \
     -usb -device usb-tablet \
     -audiodev pipewire,id=pwsnd \
     -device intel-hda -device hda-duplex,audiodev=pwsnd \
+    -display gtk \
+    -device virtio-serial-pci \
+    -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
+    -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
     -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 \
     -device virtio-net-pci,netdev=net0 \
     -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
