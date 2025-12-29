@@ -1,0 +1,68 @@
+profile := "cli"          # в копии для CLI поставь "headless" или "cli"
+vm := "arch_x86_" + profile
+dir := "../vm/" + vm
+
+base_img := dir + "/base.qcow2"
+work_img := dir + "/work.qcow2"
+iso := "../iso/archlinux-2025.12.01-x86_64.iso"
+
+ovmf_dir := `nix build --no-link --print-out-paths nixpkgs#OVMF.fd`
+ovmf_code := ovmf_dir + "/FV/OVMF_CODE.fd"
+ovmf_vars_tpl := ovmf_dir + "/FV/OVMF_VARS.fd"
+ovmf_vars := dir + "/OVMF_VARS.fd"
+
+mem := "8192"
+smp := "6"
+
+[default]
+help:
+  @just --list --justfile {{justfile()}}
+
+base:
+  mkdir -p {{dir}}
+  chattr +C {{dir}} || true
+  test -f {{base_img}} || qemu-img create -f qcow2 -o nocow=on {{base_img}} 650G
+  test -f {{ovmf_vars}} || cp -n {{ovmf_vars_tpl}} {{ovmf_vars}}
+  chmod u+w {{ovmf_vars}} || true
+  qemu-system-x86_64 \
+    -name {{vm}} \
+    -enable-kvm -machine q35 -cpu host -smp {{smp}} -m {{mem}} \
+    -drive file={{base_img}},if=virtio,format=qcow2 \
+    -vga virtio \
+    -usb -device usb-tablet \
+    -audiodev pipewire,id=pwsnd \
+    -device intel-hda -device hda-duplex,audiodev=pwsnd \
+    -display gtk \
+    -device virtio-serial-pci \
+    -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
+    -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
+    -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2223-:22,hostfwd=tcp:127.0.0.1:8080-:8080 \
+    -device virtio-net-pci,netdev=net0 \
+    -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
+    -drive if=pflash,format=raw,file={{ovmf_vars}} \
+    -cdrom {{iso}}
+
+work:
+  mkdir -p {{dir}}
+  rm -f {{work_img}}
+  qemu-img create -f qcow2 -o backing_file={{base_img}},backing_fmt=qcow2 {{work_img}}
+  qemu-system-x86_64 \
+    -name {{vm}} \
+    -enable-kvm -machine q35 -cpu host -smp {{smp}} -m {{mem}} \
+    -drive file={{work_img}},if=virtio,format=qcow2 \
+    -vga virtio \
+    -usb -device usb-tablet \
+    -audiodev pipewire,id=pwsnd \
+    -device intel-hda -device hda-duplex,audiodev=pwsnd \
+    -display gtk \
+    -device virtio-serial-pci \
+    -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
+    -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
+    -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2223-:22 \
+    -device virtio-net-pci,netdev=net0 \
+    -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
+    -drive if=pflash,format=raw,file={{ovmf_vars}}
+
+commit:
+  qemu-img commit -p -d {{work_img}}
+  rm -f {{work_img}}
