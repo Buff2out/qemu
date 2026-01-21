@@ -1,10 +1,10 @@
 profile := "cli"          # в копии для CLI поставь "headless" или "cli"
-vm := "arch_x86_" + profile
+vm := "gentoo_x86_" + profile
 dir := "../vm/" + vm
 
 base_img := dir + "/base.qcow2"
 work_img := dir + "/work.qcow2"
-iso := "../iso/archlinux-2025.12.01-x86_64.iso"
+iso := "../iso/livegui-amd64-20251214T164554Z.iso"
 
 ovmf_dir := `nix build --no-link --print-out-paths nixpkgs#OVMF.fd`
 ovmf_code := ovmf_dir + "/FV/OVMF_CODE.fd"
@@ -36,7 +36,7 @@ base:
     -device virtio-serial-pci \
     -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
     -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
-    -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2223-:22,hostfwd=tcp:127.0.0.1:18000-:8000 \
+    -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 \
     -device virtio-net-pci,netdev=net0 \
     -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
     -drive if=pflash,format=raw,file={{ovmf_vars}} \
@@ -58,7 +58,7 @@ work:
     -device virtio-serial-pci \
     -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
     -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
-    -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2223-:22 \
+    -netdev user,id=net0,hostfwd=tcp:127.0.0.1:2222-:22 \
     -device virtio-net-pci,netdev=net0 \
     -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
     -drive if=pflash,format=raw,file={{ovmf_vars}}
