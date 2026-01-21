@@ -6,3 +6,4 @@ vm/
 *.raw
 *.img
 /ovmf_vars*.fd
+.direnv/

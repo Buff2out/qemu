@@ -6,7 +6,9 @@ base_img := dir + "/base.qcow2"
 work_img := dir + "/work.qcow2"
 iso := "../iso/livegui-amd64-20251214T164554Z.iso"
 
-ovmf_dir := `nix build --no-link --print-out-paths nixpkgs#OVMF.fd`
+ovmf_dir := env("OVMF_DIR")
+ovmf_code := ovmf_dir + "/FV/OVMF_CODE.fd"
+ovmf_vars_tpl := ovmf_dir + "/FV/OVMF_VARS.fd"
 ovmf_code := ovmf_dir + "/FV/OVMF_CODE.fd"
 ovmf_vars_tpl := ovmf_dir + "/FV/OVMF_VARS.fd"
 ovmf_vars := dir + "/OVMF_VARS.fd"
