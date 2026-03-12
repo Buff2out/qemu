@@ -1,0 +1,70 @@
+profile := "cli"
+vm := "debian_x86_" + profile
+dir := "../vm/" + vm
+
+base_img := dir + "/base.qcow2"
+work_img := dir + "/work.qcow2"
+iso := "../iso/debian-13.3.0-amd64-netinst.iso"
+
+ovmf_dir := `nix build --no-link --print-out-paths nixpkgs#OVMF.fd`
+ovmf_code := ovmf_dir + "/FV/OVMF_CODE.fd"
+ovmf_vars_tpl := ovmf_dir + "/FV/OVMF_VARS.fd"
+ovmf_vars := dir + "/OVMF_VARS.fd"
+
+mem := "8192"
+smp := "6"
+
+# Порты идентичны Arch, так как запуск по очереди
+ssh_port := "2224" 
+
+[default]
+help:
+    @just --list --justfile {{justfile()}}
+
+base:
+    mkdir -p {{dir}}
+    chattr +C {{dir}} || true
+    test -f {{base_img}} || qemu-img create -f qcow2 -o nocow=on {{base_img}} 300G
+    test -f {{ovmf_vars}} || cp -n {{ovmf_vars_tpl}} {{ovmf_vars}}
+    chmod u+w {{ovmf_vars}} || true
+    qemu-system-x86_64 \
+        -name {{vm}} \
+        -enable-kvm -machine q35 -cpu host -smp {{smp}} -m {{mem}} \
+        -drive file={{base_img}},if=virtio,format=qcow2 \
+        -vga virtio \
+        -usb -device usb-tablet \
+        -audiodev pipewire,id=pwsnd \
+        -device intel-hda -device hda-duplex,audiodev=pwsnd \
+        -display gtk,gl=on \
+        -device virtio-serial-pci \
+        -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
+        -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
+        -netdev user,id=net0,hostfwd=tcp:127.0.0.1:{{ssh_port}}-:22,hostfwd=tcp:127.0.0.1:18000-:8000,hostfwd=tcp:127.0.0.1:30080-:30080,hostfwd=tcp:127.0.0.1:30081-:30081,hostfwd=tcp:127.0.0.1:30082-:30082,hostfwd=tcp:127.0.0.1:32001-:32001,hostfwd=tcp:127.0.0.1:30820-:30820,hostfwd=tcp:127.0.0.1:3000-:3000,hostfwd=tcp:127.0.0.1:6419-:6419,guestfwd=tcp:10.0.2.100:11999-tcp:127.0.0.1:11999 \
+        -device virtio-net-pci,netdev=net0 \
+        -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
+        -drive if=pflash,format=raw,file={{ovmf_vars}} \
+        -cdrom {{iso}}
+
+work:
+    mkdir -p {{dir}}
+    test -f {{work_img}} || qemu-img create -f qcow2 -b {{base_img}} -F qcow2 {{work_img}}
+    qemu-system-x86_64 \
+        -name {{vm}} \
+        -enable-kvm -machine q35 -cpu host -smp {{smp}} -m {{mem}} \
+        -drive file={{work_img}},if=virtio,format=qcow2 \
+        -vga virtio \
+        -usb -device usb-tablet \
+        -audiodev pipewire,id=pwsnd \
+        -device intel-hda -device hda-duplex,audiodev=pwsnd \
+        -display gtk \
+        -device virtio-serial-pci \
+        -chardev qemu-vdagent,id=vdagent0,clipboard=on,mouse=on \
+        -device virtserialport,chardev=vdagent0,name=com.redhat.spice.0 \
+        -netdev user,id=net0,hostfwd=tcp:127.0.0.1:{{ssh_port}}-:22,hostfwd=tcp:127.0.0.1:18000-:8000,hostfwd=tcp:127.0.0.1:30080-:30080,hostfwd=tcp:127.0.0.1:30081-:30081,hostfwd=tcp:127.0.0.1:30082-:30082,hostfwd=tcp:127.0.0.1:32001-:32001,hostfwd=tcp:127.0.0.1:30820-:30820 \
+        -device virtio-net-pci,netdev=net0 \
+        -drive if=pflash,format=raw,readonly=on,file={{ovmf_code}} \
+        -drive if=pflash,format=raw,file={{ovmf_vars}}
+
+commit:
+    qemu-img commit -p -d {{work_img}}
+    rm -f {{work_img}}
