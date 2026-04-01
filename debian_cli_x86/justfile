@@ -24,7 +24,7 @@ help:
 base:
     mkdir -p {{dir}}
     chattr +C {{dir}} || true
-    test -f {{base_img}} || qemu-img create -f qcow2 -o nocow=on {{base_img}} 300G
+    test -f {{base_img}} || qemu-img create -f qcow2 -o nocow=on {{base_img}} 500G
     test -f {{ovmf_vars}} || cp -n {{ovmf_vars_tpl}} {{ovmf_vars}}
     chmod u+w {{ovmf_vars}} || true
     qemu-system-x86_64 \
@@ -50,7 +50,7 @@ base:
 base-gpu:
     mkdir -p {{dir}}
     chattr +C {{dir}} || true
-    test -f {{base_img}} || qemu-img create -f qcow2 -o nocow=on {{base_img}} 300G
+    test -f {{base_img}} || qemu-img create -f qcow2 -o nocow=on {{base_img}} 500G
     test -f {{ovmf_vars}} || cp -n {{ovmf_vars_tpl}} {{ovmf_vars}}
     chmod u+w {{ovmf_vars}} || true
     qemu-system-x86_64 \
