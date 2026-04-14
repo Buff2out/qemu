@@ -11,7 +11,7 @@ ovmf_code := ovmf_dir + "/FV/OVMF_CODE.fd"
 ovmf_vars_tpl := ovmf_dir + "/FV/OVMF_VARS.fd"
 ovmf_vars := dir + "/OVMF_VARS.fd"
 
-mem := "8192"
+mem := "10500"
 smp := "6"
 
 # Порты идентичны Arch, так как запуск по очереди
